@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Kwestionariusz 5W — Pięć Wymiarów Wolności Funkcjonalnej</title>
+<style>
+/* --- podstawowy styl (nie zmieniaj jeśli nie chcesz) --- */
+:root{--bg:#f7f8fb;--card:#ffffff;--accent:#1f6feb;--muted:#666;}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; background:var(--bg); margin:0; color:#111;}
+.container{max-width:920px;margin:28px auto;padding:18px;}
+.card{background:var(--card);border-radius:12px;box-shadow:0 6px 18px rgba(16,24,40,0.06);padding:22px;}
+h1{margin:0 0 10px;font-size:22px;}
+.small{font-size:14px;color:var(--muted)}
+.instructions{background:#f1f5ff;border-left:4px solid var(--accent);padding:12px;border-radius:8px;margin-bottom:14px;}
+.question-box{min-height:150px;display:flex;flex-direction:column;justify-content:space-between;}
+.qtext{font-size:18px;margin:6px 0 14px;}
+.scale{display:flex;gap:10px;flex-wrap:wrap}
+.scale button{flex:1 1 46px;padding:10px;border-radius:8px;border:1px solid #e6e9ef;background:white;font-weight:600;cursor:pointer}
+.scale button.selected{background:var(--accent);color:white;border-color:var(--accent)}
+.nav{display:flex;justify-content:space-between;margin-top:16px;gap:10px}
+.btn{padding:10px 14px;border-radius:8px;border:0;background:var(--accent);color:white;cursor:pointer}
+.btn.secondary{background:#eef2ff;color:var(--accent);border:1px solid #e6e9ef}
+.progress{margin-top:12px;color:var(--muted);font-size:13px}
+.summary{margin-top:16px}
+.summary pre{white-space:pre-wrap;background:#0f1724;color:#fff;padding:12px;border-radius:8px;overflow-x:auto}
+.qa{margin-bottom:12px;padding:10px;border-radius:8px;background:#fbfdff;border:1px solid #f1f5f9}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+table th, table td{border:1px solid #e6e9ef;padding:8px;text-align:left;font-size:13px}
+.subtitle{font-weight:600;margin-top:14px;margin-bottom:6px}
+.hidden{display:none!important}
+@media (max-width:520px){.scale button{flex:1 1 40%}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card" id="app">
+  <h1 style="text-align:center; margin-top:0; margin-bottom:12px;">
+  Test 5W – Pięć Wymiarów Wolności Funkcjonalnej
+</h1>
+
+<div id="introText" class="container" style="padding-top:0;">
+  <p style="margin:2px 0;">
+    To test o unikalnym podejściu. Czasem odpowiedzi, które wydają się mniej korzystne, mogą faktycznie pomóc lepiej zrozumieć Twoją sytuację.
+  </p>
+  <p>
+    Odpowiadaj szczerze — tylko wtedy wynik będzie rzetelny, a sugestie trafne.
+  </p>
+  <p>
+    Test jest całkowicie darmowy, aby mógł służyć jak największej liczbie osób.
+  </p>
+  <p>
+    Jeśli test Cię zainteresuje i wniesie coś wartościowego w Twoje spojrzenie na życie, zajrzyj do zakładki „o teście” — znajdziesz tam więcej informacji i możliwość kontaktu.
+  </p>
+  <p>
+    Po zakończeniu testu otrzymasz szczegółowe wyjaśnienie.
+  </p>
+
+  <div class="center" style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+    <button id="startTestBtn" class="btn">Rozpocznij test</button>
+    <button id="aboutBtn" class="btn secondary">O teście</button>
+    <button id="restoreBtn" class="btn secondary">Przywróć zapisany test</button>
+  </div>
+</div>
+
+
+
+<div id="questionArea" class="question-box hidden"></div>
+
+<div id="instructionQuestions" class="instructions" style="display:none;">
+  <strong>Instrukcja do skali:</strong>
+  <p class="small" style="margin:6px 0 0">
+    Proszę ocenić, na ile zgadzasz się ze stwierdzeniem, wybierając wartość od <strong>1</strong> do <strong>6</strong>, gdzie:<br>
+    <strong>1</strong> – zdecydowanie się nie zgadzam &nbsp;&nbsp; <strong>6</strong> – zdecydowanie się zgadzam.
+  </p>
+</div>
+
+<div class="progress hidden" id="progress"></div>
+
+<div id="navButtons" style="display:flex;gap:10px;margin-top:12px" class="hidden">
+  <button id="prevBtn" class="btn secondary">Wstecz</button>
+  <button id="nextBtn" class="btn" disabled>Dalej</button>
+  <button id="goLastBtn" class="btn secondary">Przejdź do ostatniego pytania</button>
+</div>
+
+<div id="testDescription" class="small" style="margin-bottom:16px; font-size: 18px; display:none;">
+  <p>
+    <!-- obsługa: po ostatnim pytaniu pokaże się opis testu oraz przycisk „Zobacz podsumowanie” -->
+  </p>
+  <button id="showSummaryBtn" class="btn" style="margin-top: 16px; display:none;">Zobacz podsumowanie</button>
+</div>
+
+<div id="summaryArea" class="summary" style="display:none"></div>
+
+  </div>
+</div>
+
+<script>
+/* =========================
+   Pytania - pełna lista
+   =========================
+   Każdy obiekt: id, text, opcjonalnie reverse:true
+*/
+const questions = [
+  {id:"W1.6", text:"Jestem zainteresowany poznawaniem innych opinii, nawet gdy się z nimi nie zgadzam."},
+  {id:"W2.13", text:"Mój stan zdrowia i kondycja umożliwiają mi efektywne funkcjonowanie na co dzień."},
+  {id:"W3.5", text:"Zdaję sobie sprawę, kiedy jestem emocjonalnie pobudzony/a i potrafię wtedy wstrzymać się od działania."},
+  {id:"W2.5", text:"Powstrzymuję się przed wyrażeniem siebie z obawy przed negatywną oceną.", reverse:true},
+  {id:"W1.8", text:"Analizuję informacje samodzielnie, nie przyjmuję automatycznie opinii innych."},
+  {id:"W3.11", text:"Potrafię wykorzystać uczucie złości w sposób pozytywny i konstruktywny."},
+  {id:"W4.1", text:"Mam świadomość, że czasami działam według społecznych schematów, zamiast być autentycznym sobą."},
+  {id:"W2.10", text:"Potrafię asertywnie odmówić osobom sprawującym nade mną władzę lub autorytet."},
+  {id:"W5.9", text:"Potrafię skupić się na chwili obecnej, niezależnie od trudności otoczenia."},
+  {id:"W1.5", text:"Mam skłonność do szybkiego wyjaśniania sytuacji, by uniknąć poczucia niejasności.", reverse:true},
+  {id:"W4.13", text:"Potrafię oddzielić swoją wartość jako osoby od sukcesów zawodowych i społecznych."},
+  {id:"W3a.2", text:"Potrafię odczuwać emocje tak silnie, że wyraźnie wpływają na moje ciało, myśli i działania."},
+  {id:"W3.3", text:"Potrafię zaakceptować i pomieścić w sobie wszystkie emocje, także te trudne."},
+  {id:"W1.12", text:"Potrafię rozdzielić emocje od racjonalnej analizy informacji."},
+  {id:"W5.1", text:"Moje emocje, potrzeby i myśli tworzą zgraną całość, nie są sprzeczne."},
+  {id:"W1.4", text:"Cenię sobie proces poszukiwania prawdy, nawet gdy nie ma jednoznacznej odpowiedzi."},
+  {id:"W4.4", text:"Moje poczucie własnej wartości w dużej mierze zależy od moich sukcesów zawodowych lub społecznych.", reverse:true},
+  {id:"W2.1", text:"Potrafię podejmować działania bez pełnego przygotowania."},
+  {id:"W3.13", text:"Zwracam uwagę na emocje jako ważne sygnały o tym, co dla mnie istotne."},
+  {id:"W5.14", text:"Potrafię obserwować swoje emocje i doświadczenia bez identyfikowania się z nimi."},
+  {id:"W1.7", text:"Staram się zrozumieć argumenty innych przed wyrażeniem oceny."},
+  {id:"W2.7", text:"Obstaję przy swoim zdaniu, nawet gdy jest ono niepopularne."},
+  {id:"W3.7", text:"Unikam konfrontowania się z emocjami, które mogłyby mnie zranić.", reverse:true},
+  {id:"W3a.3", text:"Wyczuwam emocje innych osób, nawet gdy ich nie wyrażają słowami."},
+  {id:"W1.1", text:"Otwieram się na zmianę przekonań po nowych informacjach lub refleksji."},
+  {id:"W4.7", text:"Doceniam także te przeżycia, które nie mają wyraźnego celu ani rezultatu."},
+  {id:"W2.14", text:"Moje otoczenie daje możliwość realizowania moich planów i celów."},
+  {id:"W3.4", text:"Potrafię kontrolować swoje emocje, by nie działać impulsywnie."},
+  {id:"W5.10", text:"Moje działania przebiegają płynnie i efektywnie, bez nadmiernego wysiłku."},
+  {id:"W3.8", text:"Kiedy inni doświadczają trudnych emocji (np. złości, smutku), czuję się bezradny/a lub niekomfortowo.", reverse:true},
+  {id:"W1.3", text:"Akceptuję, że nie wszystkie kwestie mają jednoznaczną odpowiedź."},
+  {id:"W4.3", text:"Jestem zadowolony/a z siebie niezależnie od opinii otoczenia."},
+  {id:"W5.6", text:"Moje dobre samopoczucie nie zależy od czynników zewnętrznych."},
+  {id:"W3.9", text:"Automatycznie wycofuję się, gdy ktoś krytykuje moją emocjonalność.", reverse:true},
+  {id:"W1.15", text:"Rozpoznaję moment, gdy emocje utrudniają mi jasne myślenie, i potrafię się zdystansować."},
+  {id:"W4.8", text:"Funkcjonuję efektywnie, nawet gdy moje cele są niejasne lub zmienne."},
+  {id:"W2.12", text:"Gdy w relacjach spotykam się z presją, trudno mi stawiać granice i wyrażać swoje zdanie.", reverse:true},
+  {id:"W5.4", text:"Zachowuję spokój wewnętrzny mimo trudności."},
+  {id:"W3.1", text:"Potrafię rozpoznać i nazwać swoje emocje w trudnych momentach."},
+  {id:"W4.10", text:"Zastanawiam się nad prawdziwym sensem moich działań i życia."},
+  {id:"W2.9", text:"Obstaję przy swoim zdaniu, nawet jeśli grozi to konfliktem."},
+  {id:"W2.8", text:"Jestem odporny/a na presję otoczenia dotyczącą tego, jaki/a powinienem/powinnam być."},
+  {id:"W5.12", text:"Pozostaję spokojny/a i pewny/a swoich wartości mimo krytyki."},
+  {id:"W4.12", text:"Wolę robić rzeczy, które dają mi wewnętrzną satysfakcję, niż działać dla zewnętrznej aprobaty."},
+  {id:"W1.9", text:"Analizuję różne punkty widzenia, aby przetestować ich słuszność."},
+  {id:"W1.10", text:"Kiedy coś intuicyjnie czuję jako prawdziwe, nie szukam dalszych dowodów.", reverse:true},
+  {id:"W4.11", text:"Odrzucam narzucone definicje sensu życia, jeśli są sprzeczne z moimi przekonaniami."},
+  {id:"W5.5", text:"Jestem dla siebie wyrozumiały/a, mimo własnych niedoskonałości."},
+  {id:"W1.11", text:"Czuję się niekomfortowo, gdy ktoś podważa mój sposób myślenia lub podejmowane przeze mnie decyzje.", reverse:true},
+  {id:"W4.15", text:"Mam świadomość, kiedy moje emocje wpływają na moje decyzje, mimo prób dystansowania się od nich."},
+  {id:"W3a.4", text:"Czasami boję się swoich głębokich emocji, ponieważ nie zawsze wiem, jak sobie z nimi poradzić."},
+  {id:"W2.3", text:"Realizuję cele nawet w trudnych warunkach zewnętrznych."},
+  {id:"W5.2", text:"Zdaję sobie sprawę z momentów, kiedy moje zachowanie lub emocje są sprzeczne z moim prawdziwym „ja”. "},
+  {id:"W5.3", text:"Nie czuję się do końca „cały/a sobą” w codziennych działaniach.", reverse:true},
+  {id:"W1.13", text:"Świadomie rozpoznaję emocje i kontroluję reakcje na krytykę."},
+  {id:"W4.6", text:"Akceptuję zmienność i płynność mojej tożsamości."},
+  {id:"W3.12", text:"Wykorzystuję negatywne emocje jako motywację do konstruktywnych działań."},
+  {id:"W2.2", text:"Chętnie podejmuję działania, nawet gdy nie jestem pewny/a, jaki będzie ich wynik."},
+  {id:"W1.2", text:"Gdy coś jest sprzeczne z moim obrazem świata, odczuwam potrzebę szybkiego wyjaśnienia lub uporządkowania tej sytuacji.", reverse:true},
+  {id:"W4.9", text:"Widzę sens w działaniu, nawet jeśli nie przynosi ono uznania lub zewnętrznych efektów."},
+  {id:"W4.14", text:"Rozumiem, jak często moje przekonania o sensie życia są kształtowane przez oczekiwania innych."},
+  {id:"W3.6", text:"Emocje potrafią trwać we mnie długo i trudno mi je puścić, mimo że sytuacja dawno minęła.", reverse:true},
+  {id:"W5.11", text:"Potrafię obiektywnie obserwować siebie bez osądzania i presji."},
+  {id:"W2.11", text:"Działam zgodnie ze swoimi przekonaniami, nie pod presją otoczenia."},
+  {id:"W5.13", text:"Moje poczucie sensu nie jest uzależnione od zewnętrznych osiągnięć."},
+  {id:"W1.14", text:"Oceniając informację, potrafię oddzielić ją od negatywnych emocji wobec nadawcy."},
+  {id:"W3.2", text:"Czasem nie wiem, co czuję – to się dzieje \"w tle\", bez mojej kontroli.", reverse:true},
+  {id:"W2.4", text:"Potrafię wyrażać swoje potrzeby i opinie, nawet gdy mogą być niepopularne."},
+  {id:"W3a.1", text:"Doświadczam emocji nawet wtedy, gdy wiem, że są nieracjonalne."},
+  {id:"W4.2", text:"Rezygnuję ze społecznych oczekiwań, gdy ograniczają moją wolność."},
+  {id:"W3.10", text:"Mam skłonność do tłumienia emocji, nawet jeśli na zewnątrz wyglądam spokojnie.", reverse:true},
+  {id:"W5.7", text:"Odczuwam harmonię życia bez potrzeby ciągłej kontroli."},
+  {id:"W5.8", text:"Podchodzę do życia z akceptacją, nie angażując się w nieustanną walkę."},
+  {id:"W4.5", text:"Akceptuję i doceniam doświadczenia niełatwe do zdefiniowania lub wyrażenia."},
+  {id:"W2.6", text:"Umiejętnie wyrażam swoje emocje i potrzeby, nie czując się przy tym winny/a."},
+  {id:"W5.15", text:"Potrafię uważnie i bez osądzania obserwować swoje wewnętrzne doświadczenia."},
+  {id:"W5.16", text:"Zachowanie zdrowia jest dla mnie ważne, nawet jeśli ciało nie sprawia bólu i umożliwia realizację codziennych czynności."},
+  {id:"W5.17", text:"Uznaję życie za wartościowe nawet wtedy, gdy nie mam żadnych celów ani przyjemności do osiągnięcia."}
+
+];
+
+/* =========================
+   Struktura podkategorii i nazwy
+   (służy do grupowania w widoku podsumowania)
+   ========================= */
+const subcategoryMap = {
+  // W1
+  "W1.1": {title:"W1.1 Elastyczność poznawcza", range:[1,6]},
+  "W1.2": {title:"W1.2 Niezależność poznawcza", range:[7,11]},
+  "W1.3": {title:"W1.3 Separacja emocji od poznania", range:[12,15]},
+  // W2
+  "W2.1": {title:"W2.1 Swoboda działania (operacyjna)", range:[1,3]},
+  "W2.2": {title:"W2.2 Ekspresja siebie", range:[4,6]},
+  "W2.3": {title:"W2.3 Odporność na wpływ społeczny", range:[7,10]},
+  "W2.4": {title:"W2.4 Autonomia vs. podporządkowanie", range:[11,12]},
+  "W2.5": {title:"W2.5 Wpływ stanu zdrowia i otoczenia", range:[13,14]},
+  // W3
+  "W3.1": {title:"W3.1 Świadomość emocji", range:[1,3]},
+  "W3.2": {title:"W3.2 Impulsywność emocjonalna", range:[4,6]},
+  "W3.3": {title:"W3.3 Tłumienie i unikanie emocji", range:[7,10]},
+  "W3.4": {title:"W3.4 Integracja emocjonalna", range:[11,13]},
+  "W3a": {title:"W3a Intensywność emocji", range:[1,4]}, // specjalny
+  // W4
+  "W4.1": {title:"W4.1 Autentyczność vs. rola społeczna", range:[1,3]},
+  "W4.2": {title:"W4.2 Otwartość na alternatywne sposoby istnienia", range:[4,6]},
+  "W4.3": {title:"W4.3 Wolność od przymusu celu i produktywności", range:[7,9]},
+  "W4.4": {title:"W4.4 Odkrywanie osobistego sensu", range:[10,15]},
+  // W5
+  "W5.1": {title:"W5.1 Spójność wewnętrzna", range:[1,3]},
+  "W5.2": {title:"W5.2 Wewnętrzny spokój i łagodność", range:[4,6]},
+  "W5.3": {title:"W5.3 Funkcjonalna obecność i płynność działania", range:[7,10]},
+  "W5.4": {title:"W5.4 Transcendencja ego i dystans do siebie", range:[11,15]}
+};
+
+/* nazwy głównych wymiarów */
+const dimensionNames = {
+  "W1": "W1 — Wolność Poznawcza",
+  "W2": "W2 — Wolność Zewnętrzna (operacyjna + ekspresja)",
+  "W3": "W3 — Wolność Emocjonalna",
+  "W3a": "W3a — Intensywność emocji",
+  "W4": "W4 — Wolność Egzystencjalna",
+  "W5": "W5 — Wolność Integracyjna"
+};
+/* pełne opisy wymiarów do tabeli w podsumowaniu */
+const dimensionDetails = {
+  "W1": {
+    name: "Poznawcza",
+    desc: "Możliwość samodzielnego, elastycznego i niezależnego myślenia, pozwalająca na otwartość wobec nowych idei i brak konformizmu, w opozycji do dogmatyzmu, ideologii i społecznego przymusu dostosowania."
+  },
+  "W2": {
+    name: "Zewnętrzna (operacyjna + ekspresja)",
+    desc: "Swoboda działania i wyrażania siebie na zewnątrz – zarówno w sensie praktycznym (działanie, wpływ), jak i ekspresyjnym (komunikacja, widzialność). Obejmuje zdolność do realizowania celów w świecie zewnętrznym oraz do autentycznego wyrażania siebie – bez nadmiernych ograniczeń ze strony innych ludzi, środowiska, stanu zdrowia i kondycji fizycznej, presji społecznej czy wewnętrznych barier komunikacyjnych."
+  },
+  "W3": {
+    name: "Emocjonalna (wewnętrzna)",
+    desc: "Brak przymusów emocjonalnych takich jak lęk, wstyd czy potrzeba uznania, oraz zdolność świadomego przeżywania i regulacji emocji, które pozwalają zachować spokój i niezależność, także wobec presji relacji czy samotności."
+  },
+  "W4": {
+    name: "Egzystencjalna (duchowa)",
+    desc: "Zdolność do życia w zgodzie ze sobą, bez podporządkowania się narzuconym schematom sukcesu, tożsamości i sensu. Otwartość na różne formy istnienia – także poza „ego” i społecznymi narracjami. Wolność od przymusu bycia „kimś” i gotowość do samodzielnego poszukiwania znaczenia życia, niezależnie od oczekiwań otoczenia."
+  },
+  "W5": {
+    name: "Integracyjna",
+    desc: "Stan harmonii wewnętrznej, w którym różne aspekty siebie – myśli, emocje, pragnienia i doświadczenia – współistnieją bez konfliktu czy napięcia. Przejawia się w spójności, wewnętrznym spokoju i łagodności wobec siebie i świata. Pozwala działać z lekkością i obecnością, bez kurczowego przywiązania do ego czy potrzeby kontroli. Obejmuje również zdolność przyjęcia życia takim, jakie jest – nawet w obliczu trudności, których nie da się zmienić."
+  }
+};
+
+/* pomocniczne: parsowanie id i przypisanie do podkategorii */
+function parseId(id){
+  // oczekujemy formatu: W{num}.{sub} lub W3a.{n}
+  const m = id.match(/^W(\d+a?)[\.\s]?(\d+)$/i);
+  if(!m) return null;
+  const main = "W" + m[1].replace(/^0+/,'');
+  const num = parseInt(m[2],10);
+  return {main, num};
+}
+
+function findSubcategoryFor(id){
+  // id: "W1.6" lub "W3a.2"
+  const p = parseId(id);
+  if(!p) return null;
+  const main = p.main;
+  const n = p.num;
+  // map rules as zdefiniowane powyżej
+  if(main === "W1"){
+    if(n >=1 && n<=6) return "W1.1";
+    if(n >=7 && n<=11) return "W1.2";
+    return "W1.3";
+  }
+  if(main === "W2"){
+    if(n>=1 && n<=3) return "W2.1";
+    if(n>=4 && n<=6) return "W2.2";
+    if(n>=7 && n<=10) return "W2.3";
+    if(n>=11 && n<=12) return "W2.4";
+    return "W2.5";
+  }
+  if(main === "W3"){
+    if(n>=1 && n<=3) return "W3.1";
+    if(n>=4 && n<=6) return "W3.2";
+    if(n>=7 && n<=10) return "W3.3";
+    return "W3.4";
+  }
+  if(main === "W3a"){
+    return "W3a";
+  }
+  if(main === "W4"){
+    if(n>=1 && n<=3) return "W4.1";
+    if(n>=4 && n<=6) return "W4.2";
+    if(n>=7 && n<=9) return "W4.3";
+    return "W4.4";
+  }
+  if(main === "W5"){
+    if(n>=1 && n<=3) return "W5.1";
+    if(n>=4 && n<=6) return "W5.2";
+    if(n>=7 && n<=10) return "W5.3";
+    return "W5.4";
+  }
+  return null;
+}
+
+/* =========================
+   Logika testu (UI)
+   ========================= */
+let idx = 0;
+const answers = new Array(questions.length).fill(null); // surowe odpowiedzi 1..6
+
+const qArea = document.getElementById('questionArea');
+const progress = document.getElementById('progress');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const summaryArea = document.getElementById('summaryArea');
+const goLastBtn = document.getElementById('goLastBtn');
+const showSummaryBtn = document.getElementById('showSummaryBtn');
+/* ============ PERSISTENCE (localStorage) ============ */
+const STORAGE_KEY = 'test5w_state_v1';
+const startBtn = document.getElementById('startTestBtn');
+
+function saveState() {
+  try {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ answers, idx })
+    );
+  } catch (e) {
+    // brak miejsca / prywatne okno — ignorujemy
+  }
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const state = JSON.parse(raw);
+    if (!state || !Array.isArray(state.answers)) return null;
+    if (state.answers.length !== questions.length) return null;
+    const normalizedAnswers = state.answers.map(v =>
+      v === null ? null : Number(v)
+    );
+    let i = Number.isInteger(state.idx) ? state.idx : (questions.length - 1);
+    i = Math.max(0, Math.min(i, questions.length - 1));
+    return { answers: normalizedAnswers, idx: i };
+  } catch {
+    return null;
+  }
+}
+
+function clearState() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch {}
+}
+
+/* Wspólny start UI pytań */
+function showTestUI() {
+  document.getElementById("introText").classList.add("hidden");
+  document.getElementById("questionArea").classList.remove("hidden");
+  document.getElementById("progress").classList.remove("hidden");
+  document.getElementById("navButtons").classList.remove("hidden");
+  document.getElementById('instructionQuestions').style.display = 'block';
+}
+
+/* Prosty modal "O teście" (na teraz) */
+function showAboutModal() {
+  const text = `
+Ten test bada pięć wymiarów Wolności Funkcjonalnej (W1–W5).
+Ma służyć samoobserwacji i rozwojowi, nie zastępuje profesjonalnej diagnozy.
+Twoje odpowiedzi możesz zapisać lokalnie i przywrócić na tym urządzeniu przyciskiem „Przywróć zapisany test”.
+  `.trim();
+
+  let modal = document.getElementById('aboutModal');
+  if (modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'aboutModal';
+  Object.assign(modal.style, {
+    position:'fixed', inset:'0', background:'rgba(0,0,0,.45)',
+    display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999
+  });
+  const box = document.createElement('div');
+  Object.assign(box.style, {
+    width:'90%', maxWidth:'720px', background:'#fff', padding:'16px',
+    borderRadius:'10px', boxShadow:'0 8px 30px rgba(0,0,0,.25)'
+  });
+  const h = document.createElement('div');
+  h.style.fontWeight = '700';
+  h.textContent = 'O teście 5W';
+  const p = document.createElement('div');
+  p.style.margin = '10px 0 16px';
+  p.textContent = text;
+  const close = document.createElement('button');
+  close.className = 'btn';
+  close.textContent = 'Zamknij';
+  close.onclick = ()=> modal.remove();
+  box.appendChild(h); box.appendChild(p); box.appendChild(close);
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+}
+
+// start
+// Rozpocznij NOWY test (z potwierdzeniem utraty zapisu)
+document.getElementById("startTestBtn").addEventListener("click", function() {
+  const hasSaved = loadState() !== null;
+  if(hasSaved) {
+    const confirmDelete = confirm(
+      "Masz zapisany test. Rozpoczęcie nowego testu spowoduje utratę poprzednich odpowiedzi. Kontynuować?"
+    );
+    if(!confirmDelete) return;
+  }
+  clearState();
+  answers.fill(null);
+  idx = 0;
+  showTestUI();
+  renderQuestion(idx);
+});
+
+// Przywróć zapisany test — otwórz OSTATNIE pytanie,
+// a wszystkie odpowiedzi wczytane (zał. że były zapisane)
+document.getElementById("restoreBtn").addEventListener("click", function() {
+  const state = loadState();
+  if (!state) {
+    alert('Brak zapisanego testu na tym urządzeniu.');
+    return;
+  }
+  // wczytaj
+  for (let i = 0; i < questions.length; i++) {
+    answers[i] = state.answers[i];
+  }
+  // ustaw na ostatnie pytanie testu
+ // znajdź indeks ostatniego wypełnionego pytania
+let lastAnswered = -1;
+for (let i = 0; i < answers.length; i++) {
+  if (answers[i] !== null) lastAnswered = i;
+}
+// ustaw idx na pierwsze niewypełnione po ostatnim wypełnionym
+idx = (lastAnswered + 1 < questions.length) ? lastAnswered + 1 : questions.length - 1;
+
+  showTestUI();
+  renderQuestion(idx);
+});
+
+// O teście (nowa strona)
+document.getElementById("aboutBtn").addEventListener("click", function() {
+  window.open('o-tescie.html', '_blank'); // otwiera nową stronę "o-tescie.html"
+});
+
+// go last
+goLastBtn.addEventListener('click', ()=> {
+  idx = questions.length - 1;
+  renderQuestion(idx);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+
+function renderQuestion(i){
+  const q = questions[i];
+  qArea.innerHTML = `
+    <div>
+      <div class="small">Pytanie ${i+1} / ${questions.length}</div>
+      <div class="qtext">${escapeHtml(q.text)}</div>
+      <div class="scale" id="scaleArea"></div>
+    </div>
+  `;
+  const scaleArea = document.getElementById('scaleArea');
+  for(let v=1;v<=6;v++){
+    const b = document.createElement('button');
+    b.type='button';
+    b.textContent = v;
+    b.onclick = ()=> { selectValue(v, i); };
+    if(answers[i] === v) b.classList.add('selected');
+    scaleArea.appendChild(b);
+  }
+  progress.textContent = `Pytanie ${i+1} z ${questions.length}`;
+  prevBtn.style.display = i>0 ? 'inline-block' : 'none';
+  nextBtn.style.display = 'inline-block';
+  nextBtn.disabled = (answers[i] === null);
+  nextBtn.textContent = i===questions.length-1 ? 'Zakończ' : 'Dalej';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function selectValue(v, questionIndex){
+  answers[questionIndex] = v;
+  const btns = document.querySelectorAll('#scaleArea button');
+  btns.forEach(b => b.classList.toggle('selected', b.textContent==v));
+  nextBtn.disabled = false;
+  idx = questionIndex;
+  saveState(); // <<<<<< ZAPIS
+}
+
+
+prevBtn.addEventListener('click', () => {
+  if (idx > 0) {
+    idx--;
+    renderQuestion(idx);
+  } else {
+    // powrót do startu (nie powinno tu dojść bo prev ukryty)
+    document.getElementById('questionArea').classList.add('hidden');
+    document.getElementById('navButtons').classList.add('hidden');
+    document.getElementById('progress').classList.add('hidden');
+    document.getElementById('instructionQuestions').style.display = 'none';
+    document.getElementById('introText').classList.remove('hidden');
+    idx = 0;
+  }
+});
+
+nextBtn.addEventListener('click', () => {
+  if (answers[idx] === null) {
+    alert('Proszę wybrać wartość 1–6 zanim przejdziesz dalej.');
+    return;
+  }
+  if (idx < questions.length - 1) {
+    idx++;
+    renderQuestion(idx);
+  } else {
+    // po ostatnim pytaniu pokaż opis testu z możliwością przejścia do podsumowania
+    showTestDescription();
+  }
+});
+
+/* =========================
+   Funkcje obliczeniowe
+   ========================= */
+
+// zwraca wartość uwzględniając reverse: jeśli reverse -> zamieniamy 1->6,2->5,... czyli value = 7 - answer
+
+// zgrupuj wyniki wg podkategorii
+function computeResults(){
+  const res = {
+    bySub: {}, // np. "W1.1": {sum:..., count:..., items:[{idx, id, text, raw, scored}]}
+    byDim: {}, // "W1": {sum,count}
+  };
+
+  questions.forEach((q, i) => {
+    const sub = findSubcategoryFor(q.id);
+    const p = parseId(q.id);
+    const dim = p ? p.main : 'unknown';
+    if(!res.bySub[sub]) res.bySub[sub] = {sum:0,count:0,items:[]};
+    if(!res.byDim[dim]) res.byDim[dim] = {sum:0,count:0};
+    const raw = answers[i];
+    const scored = scoredValue(i);
+    if(scored !== null){
+      res.bySub[sub].sum += scored;
+      res.bySub[sub].count += 1;
+      res.byDim[dim].sum += scored;
+      res.byDim[dim].count += 1;
+    } else {
+      // zostaw puste - liczymy tylko udzielone odpowiedzi
+    }
+    res.bySub[sub].items.push({idx:i, id:q.id, text:q.text, raw, scored, reverse: !!q.reverse});
+  });
+
+  // dodaj średnie
+  Object.keys(res.bySub).forEach(k => {
+    const o = res.bySub[k];
+    o.avg = o.count ? +(o.sum / o.count).toFixed(2) : null;
+  });
+  Object.keys(res.byDim).forEach(k => {
+    const o = res.byDim[k];
+    o.avg = o.count ? +(o.sum / o.count).toFixed(2) : null;
+  });
+
+  return res;
+}
+
+/* =========================
+   Pokaz opisu testu, potem podsumowania
+   ========================= */
+
+function showTestDescription(){
+  // ukryj obszary pytań i nawigacji
+  qArea.style.display='none';
+  prevBtn.style.display='none';
+  nextBtn.style.display='none';
+  progress.style.display='none';
+  document.getElementById('introText').style.display='none';
+  document.getElementById('navButtons').style.display='none';
+  document.getElementById('instructionQuestions').style.display = 'none';
+  // pokaż opis i przycisk do podsumowania
+  const descr = document.getElementById('testDescription');
+  descr.querySelector('p').innerHTML = `
+    <strong style="font-size:18px; line-height:1.4;">Krótkie wprowadzenie</strong><br />
+  <p style="margin:6px 0; font-size:16px; line-height:1.5; color:#333;">
+    Za chwilę zobaczysz raport z wynikami i podziałem na kategorie wolności.
+  </p>
+  <p style="margin:6px 0; font-size:16px; line-height:1.5; color:#333;">
+    Schemat testu to jego rdzeń – ważniejszy od punktów jest plan działania.
+  </p>
+  <p style="margin:6px 0; font-size:16px; line-height:1.5; color:#333;">
+    Skopiuj cały tekst i wklej do ChatGPT – niczego nie zmieniaj.
+  </p>
+  <p style="margin:6px 0; font-size:16px; line-height:1.5; color:#333;">
+    Jeśli coś Cię zaskoczy lub uznasz odpowiedź za błędną, dopytaj i podyskutuj z AI – jego argumenty mogą okazać się wartościowe i interesujące.
+  </p>
+  <p style="margin:6px 0; font-size:16px; line-height:1.5; color:#333;">
+    Pamiętaj, test nie zastępuje profesjonalnej diagnozy ani terapii.
+  </p>
+  `;
+  const btn = document.getElementById('showSummaryBtn');
+btn.style.display = 'block';
+btn.style.margin = '20px auto';
+  descr.style.display = 'block';
+  btn.onclick = ()=> {
+    showSummary();
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function showSummary(){
+  // ====== WYŚLIJ LICZNIK DO ARKUSZA ======
+  fetch('https://script.google.com/macros/s/AKfycbzcLzrx6v9i2mMB3ct2MxfhEGwo5bUAssZMZx921FVIqvzDr_8325uCLFKONrYAxR64/exec', {
+    method: 'POST',
+    body: JSON.stringify({action: 'increment'}),
+    headers: {'Content-Type': 'application/json'}
+  }).catch(e => console.log('Błąd wysyłki licznika:', e));
+  // =======================================
+
+  // oblicz wyniki
+  const results = computeResults();
+
+  // pokaż widocznie summaryArea
+  summaryArea.style.display = 'block';
+  summaryArea.innerHTML = ''; // clear
+
+  // nagłówek
+  const h = document.createElement('h3'); h.textContent = 'Podsumowanie odpowiedzi'; summaryArea.appendChild(h);
+
+// pełna tabela z opisami wymiarów (W1–W5)
+const overview = document.createElement('div');
+overview.className = 'small';
+overview.innerHTML = `
+  <div class="subtitle">Test 5W – Pięć Wymiarów Wolności Funkcjonalnej</div>
+  <p style="margin:6px 0;">
+    „Wolność funkcjonalna to zdolność człowieka do działania, myślenia i przeżywania siebie i świata w sposób autonomiczny, spójny i adekwatny do kontekstu.”
+  </p>
+`;
+
+const table = document.createElement('table');
+table.innerHTML = `
+  <thead>
+    <tr>
+      <th>Kod</th>
+      <th>Nazwa wolności</th>
+      <th>Średnia</th>
+      <th>Co znaczy wolność w tej osi?</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+`;
+
+// kolejność tylko głównych wymiarów (bez W3a)
+['W1','W2','W3','W4','W5'].forEach(k => {
+  const r = results.byDim[k];
+  const avg = r && r.avg !== null ? r.avg.toFixed(2) : '—';
+  const meta = dimensionDetails[k];
+
+// interpretacja jakościowa
+let interp = '';
+if(avg !== '—'){
+  const val = parseFloat(avg);
+  if(val < 2.5) interp = 'bardzo słaba';
+  else if(val < 3.5) interp = 'słaba';
+  else if(val < 4.5) interp = 'przeciętna';
+  else if(val < 5.5) interp = 'dobra';
+  else if(val < 6.0) interp = 'bardzo dobra';
+  else interp = 'doskonała';
+}
+
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>${k}</td>
+    <td>${meta ? meta.name : (dimensionNames[k] || k)}</td>
+    <td>${avg}${interp ? '<br><small>Interpretacja: ' + interp + '</small>' : ''}</td>
+    <td style="vertical-align:top;">${meta ? meta.desc : ''}</td>
+  `;
+  table.querySelector('tbody').appendChild(tr);
+});
+
+
+overview.appendChild(table);
+summaryArea.appendChild(overview);
+
+
+  // teraz podział na podkategorie - w kolejności logicznej
+  summaryArea.appendChild(document.createElement('hr'));
+  const subtitle = document.createElement('div');
+  subtitle.className = 'subtitle';
+  subtitle.textContent = 'Szczegółowe wyniki — podkategorie i pytania';
+  summaryArea.appendChild(subtitle);
+
+  // chcemy iterować podkategorie w logicznej kolejności:
+  const orderedSubs = [
+    "W1.1","W1.2","W1.3",
+    "W2.1","W2.2","W2.3","W2.4","W2.5",
+    "W3.1","W3.2","W3.3","W3.4","W3a",
+    "W4.1","W4.2","W4.3","W4.4",
+    "W5.1","W5.2","W5.3","W5.4"
+  ];
+
+  orderedSubs.forEach(sub => {
+    const meta = subcategoryMap[sub];
+    if(!meta) return;
+    const block = document.createElement('div');
+    block.className = 'qa';
+    const header = document.createElement('div');
+    header.style.fontWeight = 700;
+    header.textContent = meta.title + (results.bySub[sub] && results.bySub[sub].avg !== null ? ` — średnia: ${results.bySub[sub].avg}` : '');
+    block.appendChild(header);
+    const items = results.bySub[sub] ? results.bySub[sub].items : [];
+    // posortuj według index (oryginalna kolej)
+items.sort((a,b)=> a.idx - b.idx);
+items.forEach(it => {
+  const p = document.createElement('div');
+  p.style.marginTop = '8px';
+  const scoredText = it.scored === null ? 'brak' : it.scored;
+  const rev = it.reverse ? ' (-)' : '';
+  // pokaż tylko: id pytania + punktacja
+  p.innerHTML = `<div style="font-weight:600">${it.id}${rev} — punktacja: <strong>${scoredText}</strong></div>
+    <div style="margin:4px 0">${escapeHtml(it.text)}</div>`;
+  block.appendChild(p);
+});
+summaryArea.appendChild(block);
+  });
+
+
+  // przyciski: kopiuj, wygeneruj pełny tekst do kopiowania, pobierz CSV
+const actions = document.createElement('div');
+actions.style.marginTop = '10px';
+
+// Guzik "Wygeneruj pełen tekst do wklejenia do ChatGPT"
+const genBtn = document.createElement('button');
+genBtn.className = 'btn secondary';
+genBtn.style.marginRight = '8px';
+genBtn.textContent = 'Wygeneruj pełen tekst do wklejenia do ChatGPT';
+genBtn.onclick = () => {
+    const exportText = buildFullExportText(results);
+    showExportModal(exportText);
+};
+actions.appendChild(genBtn);
+
+// Guzik "Pobierz CSV"
+const csvBtn = document.createElement('button');
+csvBtn.className = 'btn secondary';
+csvBtn.style.marginRight = '8px';
+csvBtn.textContent = 'Pobierz CSV (pytanie;odpowiedź;punkty)';
+csvBtn.onclick = () => {
+    let csv = 'id;pytanie;raw;scored\n';
+    questions.forEach((q,i) => {
+        const raw = answers[i] === null ? '' : answers[i];
+        const s = scoredValue(i) === null ? '' : scoredValue(i);
+        csv += `"${q.id}";"${q.text.replace(/"/g,"'")}";${raw};${s}\n`;
+    });
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download='wyniki_kwestionariusza.csv'; a.click();
+    URL.revokeObjectURL(url);
+};
+actions.appendChild(csvBtn);
+
+// Nowy guziki: "Powrót do O teście"
+const backToTestBtn = document.createElement('button');
+backToTestBtn.className = 'btn';
+backToTestBtn.textContent = 'Powrót do\nO teście';
+backToTestBtn.onclick = () => window.location.href = 'o-tescie.html';
+actions.appendChild(backToTestBtn);
+
+// Podłączamy kontener przycisków do summaryArea
+summaryArea.appendChild(actions);
+
+
+  // dodatkowy krótki komentarz (prostota)
+  const shortComment = document.createElement('div');
+  shortComment.className = 'small';
+  shortComment.style.marginTop = '12px';
+  shortComment.innerHTML = '<strong>Krótki komentarz:</strong> Poniżej możesz wygenerować pełny tekst zawierający tabelę opisów, wszystkie pytania z punktacją i gotowy prompt do analizy. Ten tekst wklejasz do ChatGPT i otrzymasz szczegółową analizę.';
+  summaryArea.appendChild(shortComment);
+
+  // usuń widok testDescription (jeśli był)
+  document.getElementById('testDescription').style.display = 'none';
+
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* =========================
+   Funkcja budująca pełny tekst do kopiowania (plain text)
+   ========================= */
+function buildFullExportText(results){
+  // header z opisem wymiarów (użytkownik prosił by to było w tekście)
+  const header = `Test 5W – Pięć Wymiarów Wolności Funkcjonalnej
+„Wolność funkcjonalna to zdolność człowieka do działania, myślenia i przeżywania siebie i świata w sposób autonomiczny, spójny i adekwatny do kontekstu.”
+
+Kod\tNazwa wolności\tCo znaczy wolność w tej osi?
+W1\tPoznawcza\tMożliwość samodzielnego, elastycznego i niezależnego myślenia, pozwalająca na otwartość wobec nowych idei i brak konformizmu, w opozycji do dogmatyzmu, ideologii i społecznego przymusu dostosowania.
+W2\tZewnętrzna (operacyjna + ekspresja)\tSwoboda działania i wyrażania siebie na zewnątrz – zarówno w sensie praktycznym (działanie, wpływ), jak i ekspresyjnym (komunikacja, widzialność)...
+W3\tEmocjonalna (wewnętrzna)\tBrak przymusów emocjonalnych takich jak lęk, wstyd czy potrzeba uznania; zdolność świadomego przeżywania i regulacji emocji.
+W4\tEgzystencjalna (duchowa)\tZdolność do życia w zgodzie ze sobą, bez podporządkowania się narzuconym schematom sukcesu, tożsamości i sensu.
+W5\tIntegracyjna\tStan harmonii wewnętrznej, w którym różne aspekty siebie współistnieją bez konfliktu czy napięcia.
+`.trim();
+
+  // następnie: tabela podkategorii + pytania z punktacją
+  let body = '\\n\\nSzczegółowe wyniki:\\n';
+
+  const orderedSubs = [
+    "W1.1","W1.2","W1.3",
+    "W2.1","W2.2","W2.3","W2.4","W2.5",
+    "W3.1","W3.2","W3.3","W3.4","W3a",
+    "W4.1","W4.2","W4.3","W4.4",
+    "W5.1","W5.2","W5.3","W5.4"
+  ];
+
+orderedSubs.forEach(sub => {
+    const meta = subcategoryMap[sub];
+    if(!meta) return;
+    const subObj = results.bySub[sub];
+    const avgVal = subObj && subObj.avg !== null ? subObj.avg : null; // liczba lub null
+    const avgDisplay = avgVal !== null ? avgVal.toFixed(2) : '—';
+    body += `\n${meta.title} — średnia: ${avgDisplay}\n`;
+
+    // interpretacja średnich punktów
+    if(avgVal !== null){
+        let interp = '';
+        if(avgVal < 2) interp = 'słaba';
+        else if(avgVal < 3) interp = 'średnia';
+        else if(avgVal < 4) interp = 'dobra';
+        else if(avgVal < 5) interp = 'bardzo dobra';
+        else interp = 'doskonała';
+        body += `Interpretacja: ${interp} zdolność w tym wymiarze.\n`;
+    }
+
+    // listuj pytania w kolejności
+    const items = subObj ? subObj.items.slice().sort((a,b)=> a.idx - b.idx) : [];
+    items.forEach(it => {
+        const scored = it.scored === null ? '—' : it.scored;
+        const revFlag = it.reverse ? ' (-)' : '';
+        body += `${it.id}${revFlag}: ${it.text} — punktacja: ${scored}\n`;
+    });
+});
+
+
+  // dodaj finalny prompt (instrukcję do AI) — użyjemy tego, co prosiłeś
+  const finalPrompt = `
+
+Analiza wyników testu 5W – Pięć Wymiarów Wolności Funkcjonalnej
+Dane:
+Poniżej przesyłam wyniki testu wraz z odpowiedziami i punktacją (zawarte w tekście powyżej).
+
+Twoim zadaniem jest:
+1. Zidentyfikuj najniżej i najwyżej ocenione obszary testu – wskaż, które wymiary i podwymiary wolności funkcjonalnej wypadają najsłabiej i najsilniej.
+2. Zinterpretuj napięcia i niespójności między tymi obszarami – gdzie widzisz sprzeczności, konflikty wewnętrzne lub rozbieżności, które mogą utrudniać spójne funkcjonowanie.
+3. Opisz możliwe schematy działania, mechanizmy i typowe przeżycia wynikające z profilu – np. "działasz skutecznie, ale kosztem tłumionych emocji", "możesz mieć tendencję do nadmiernego dostosowania się", "unikasz konfliktu kosztem autentyczności".
+4. Wskaż potencjalne źródła tych wzorców – uwzględnij psychologiczne i rozwojowe podłoża: niezaspokojone wewnętrzne potrzeby, mechanizmy przetrwania (uleganie, maskowanie), lęk przed odrzuceniem, potrzeba kontroli, perfekcjonizm, syndrom impostora, trauma dzieciństwa, wychowanie w kulcie sukcesu itp.
+5. Zbuduj syntetyczny obraz osoby na podstawie wyników i powiązań między grupami wolności.
+6. Zaproponuj konkretne kierunki dalszej pracy rozwojowej — co warto zbadać i trenować (np. praca z emocjami, asertywność, praca z poczuciem własnej wartości).
+7. Podkreśl mocne strony profilu — konkretne zasoby, które można wykorzystać w rozwoju.
+8. Formatuj odpowiedź czytelnie (nagłówki, akapity, listy).
+9. Bądź rzeczowy, konkretny i szczery.
+
+`;
+
+  return [header, body, finalPrompt].join('\\n\\n');
+}
+
+/* =========================
+   Modal / textarea do podglądu i kopiowania wygenerowanego tekstu
+   ========================= */
+function showExportModal(text){
+  // prosty modal-like element appended to body
+  let modal = document.getElementById('exportModal');
+  if(modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'exportModal';
+  modal.style.position = 'fixed';
+  modal.style.left = 0;
+  modal.style.top = 0;
+  modal.style.width = '100%';
+  modal.style.height = '100%';
+  modal.style.background = 'rgba(0,0,0,0.45)';
+  modal.style.display = 'flex';
+  modal.style.alignItems = 'center';
+  modal.style.justifyContent = 'center';
+  modal.style.zIndex = 9999;
+
+  const box = document.createElement('div');
+  box.style.width = '90%';
+  box.style.maxWidth = '980px';
+  box.style.maxHeight = '85%';
+  box.style.background = '#fff';
+  box.style.padding = '16px';
+  box.style.borderRadius = '10px';
+  box.style.overflow = 'auto';
+  box.style.boxShadow = '0 8px 30px rgba(0,0,0,0.25)';
+
+  const h = document.createElement('div');
+  h.style.display='flex';
+  h.style.justifyContent='space-between';
+  h.style.alignItems='center';
+  const title = document.createElement('div');
+  title.style.fontWeight = 700;
+  title.textContent = 'Wygenerowany tekst (skopiuj i wklej do ChatGPT)';
+  const close = document.createElement('button');
+  close.className = 'btn secondary';
+  close.textContent = 'Zamknij';
+  close.onclick = ()=> modal.remove();
+  h.appendChild(title);
+  h.appendChild(close);
+  box.appendChild(h);
+
+  const ta = document.createElement('textarea');
+  ta.style.width = '100%';
+  ta.style.height = '60vh';
+  ta.style.marginTop = '12px';
+  ta.style.padding = '10px';
+  ta.value = text;
+  box.appendChild(ta);
+
+  const actions = document.createElement('div');
+  actions.style.marginTop = '8px';
+  const copyAll = document.createElement('button');
+  copyAll.className = 'btn';
+  copyAll.textContent = 'Kopiuj wszystko';
+  copyAll.onclick = ()=> {
+    navigator.clipboard.writeText(ta.value).then(()=> {
+      copyAll.textContent = 'Skopiowano!';
+      setTimeout(()=> copyAll.textContent = 'Kopiuj wszystko', 1400);
+    }).catch(()=> alert('Kopiowanie nie powiodło się — skopiuj ręcznie.'));
+  };
+  actions.appendChild(copyAll);
+
+  const download = document.createElement('button');
+  download.className = 'btn secondary';
+  download.style.marginLeft = '8px';
+  download.textContent = 'Pobierz jako .txt';
+  download.onclick = ()=> {
+    const blob = new Blob([ta.value], {type:'text/plain;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'wyniki_testu_5W.txt'; a.click();
+    URL.revokeObjectURL(url);
+  };
+  actions.appendChild(download);
+
+  box.appendChild(actions);
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+  ta.focus();
+  ta.select();
+  modal.onclick = (e) => {
+    if(e.target === modal) modal.remove();
+  };
+}
+
+/* =========================
+   Helpers
+   ========================= */
+function escapeHtml(s){
+  if(!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function scoredValue(i){
+  const q = questions[i];
+  const raw = answers[i];
+  if(raw === null) return null;
+  return q.reverse ? (7 - raw) : raw;
+}
+
+/* DOM loaded safety */
+window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const restore = urlParams.get('restoreAnswers');
+    const skipStart = urlParams.get('skipStart');
+
+    if (restore === '1') {
+        // Ukryj introText
+        const intro = document.getElementById('introText');
+        if (intro) intro.style.display = 'none';
+
+        // Odczekaj chwilę, żeby test się wyrenderował
+        setTimeout(() => {
+            if (typeof restoreSavedAnswers === 'function') restoreSavedAnswers();
+
+            // kliknij automatycznie "Zakończ test", jeśli przycisk istnieje
+            const endBtn = document.getElementById('endTestBtn');
+            if (endBtn) endBtn.click();
+
+            // przewiń do podsumowania
+            const summary = document.getElementById('summaryArea');
+            if (summary) summary.scrollIntoView({behavior: 'smooth'});
+        }, 200);
+    }
+});
+</script>
+</body>
+</html>
